@@ -20,12 +20,24 @@ struct Slide {
     };
 };
 
-int score(Slide s1, Slide s2) {
+int slide_score(Slide s1, Slide s2) {
     // trova tag in comune
     // calcola # tag in comune
     // calcola # tag in s1 e NON in s2 i.e. tag s1 != tag comune
     // calcola # tag in s2 e NON in s1 i.e. tag s2 != tag comune
     int score = 0;
+    return score;
+}
+
+// INV: v1 and v2 must be vertical photos
+int vertical_score(Photo& v1, Photo& v2) {
+    int score = v1.tag_num + v2.tag_num;
+    for (int i = 0; i < v1.tag_num; i++) {
+        for (int j = 0; j < v2.tag_num; j++) {
+            if (*(v1.tags[i]) == *(v2.tags[j]))
+                score--;
+        }
+    }
     return score;
 }
 
