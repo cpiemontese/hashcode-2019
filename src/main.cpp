@@ -13,20 +13,25 @@ struct Photo {
 enum struct SlideKind { H, V };
 
 struct Slide {
+    int tag_num;
+    string** tags;
     SlideKind kind;
     union {
-        Photo horizontal_photo;                 // SlideKind::H
-        pair<Photo, Photo> vertical_photos;     // SlideKind::V
+        int id;                 // SlideKind::H
+        pair<int, int> ids;     // SlideKind::V
     };
 };
 
-int slide_score(Slide s1, Slide s2) {
-    // trova tag in comune
-    // calcola # tag in comune
-    // calcola # tag in s1 e NON in s2 i.e. tag s1 != tag comune
-    // calcola # tag in s2 e NON in s1 i.e. tag s2 != tag comune
+int slide_score(Slide& s1, Slide& s2) {
     int score = 0;
-    return score;
+    int common_tags = 0;
+    for (int i = 0; i < s1.tag_num; i++) {
+        for (int j = 0; j < s2.tag_num; j++) {
+            if (*(s1.tags[i]) == *(s2.tags[j]))
+                common_tags++;
+        }
+    }
+    return min(common_tags, min(s1.tag_num - common_tags, s2.tag_num - common_tags));
 }
 
 // INV: v1 and v2 must be vertical photos
@@ -63,6 +68,7 @@ int main(int argc, char** argv) {
     string kind;
     Photo current_photo;
     int current_slide_id = 0;
+    // TODO: remove copy of current_photo 
     for (int l = 0; l < lines; l++) {
         infile >> kind;
         infile >> current_photo.tag_num;
@@ -76,10 +82,12 @@ int main(int argc, char** argv) {
 
         if (kind == "H") {
             slides[current_slide_id].kind = SlideKind::H;
-            slides[current_slide_id].horizontal_photo = current_photo; // ptr?
+            slides[current_slide_id].id = current_photo.id;
+            slides[current_slide_id].tag_num = current_photo.tag_num;
+            slides[current_slide_id].tags = current_photo.tags;
             current_slide_id++;
         } else
-            verticals.push_back(current_photo); // ptr?
+            verticals.push_back(current_photo);
     }
 
     // vertical_slides = local_search_verticals(verticals)
