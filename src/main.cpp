@@ -1,20 +1,21 @@
 #include <fstream>
 #include <iostream>
-//#include <memory>
 #include <vector>
+#include <math.h>
 using namespace std;
 
 struct Photo {
     int id;
+    string kind;
     int tag_num;
-    string** tags;
+    string* tags;
 };
 
 enum struct SlideKind { H, V };
 
 struct Slide {
     int tag_num;
-    string** tags;
+    string* tags;
     SlideKind kind;
     union {
         int id;                 // SlideKind::H
@@ -22,29 +23,9 @@ struct Slide {
     };
 };
 
-int slide_score(Slide& s1, Slide& s2) {
-    int score = 0;
-    int common_tags = 0;
-    for (int i = 0; i < s1.tag_num; i++) {
-        for (int j = 0; j < s2.tag_num; j++) {
-            if (*(s1.tags[i]) == *(s2.tags[j]))
-                common_tags++;
-        }
-    }
-    return min(common_tags, min(s1.tag_num - common_tags, s2.tag_num - common_tags));
-}
-
-// INV: v1 and v2 must be vertical photos
-int vertical_score(Photo& v1, Photo& v2) {
-    int score = v1.tag_num + v2.tag_num;
-    for (int i = 0; i < v1.tag_num; i++) {
-        for (int j = 0; j < v2.tag_num; j++) {
-            if (*(v1.tags[i]) == *(v2.tags[j]))
-                score--;
-        }
-    }
-    return score;
-}
+int slide_score(Slide& s1, Slide& s2);
+int vertical_score(Photo& v1, Photo& v2);
+Slide* local_search_verticals(Photo* vphotos[], int vphotos_len, int vslides_num);
 
 int main(int argc, char** argv) {
     if (argc != 3) {
@@ -62,32 +43,31 @@ int main(int argc, char** argv) {
     // e' la posizione occupata nell'array, in modo da poter shufflare in
     // maniera banale per creare nuove soluzioni, i.e. lavoro sugli indici
 
-    Slide slides[lines]; // valore finale dopo preproc verticali
-    vector<Photo> verticals;
-
-    string kind;
-    Photo current_photo;
-    int current_slide_id = 0;
-    // TODO: remove copy of current_photo 
+    int vertical_photos = 0;
+    Photo photos[lines];
     for (int l = 0; l < lines; l++) {
-        infile >> kind;
-        infile >> current_photo.tag_num;
+        infile >> photos[l].kind;
+        infile >> photos[l].tag_num;
 
-        current_photo.id = l;
-        current_photo.tags = new string*[current_photo.tag_num];
-        for (int t = 0; t < current_photo.tag_num; t++) {
-            current_photo.tags[t] = new string;
-            infile >> *current_photo.tags[t];
+        if (photos[l].kind == "V")
+            vertical_photos++;
+
+        photos[l].id = l;
+        photos[l].tags = new string[photos[l].tag_num];
+        for (int t = 0; t < photos[l].tag_num; t++) {
+            infile >> photos[l].tags[t];
         }
+    }
 
-        if (kind == "H") {
-            slides[current_slide_id].kind = SlideKind::H;
-            slides[current_slide_id].id = current_photo.id;
-            slides[current_slide_id].tag_num = current_photo.tag_num;
-            slides[current_slide_id].tags = current_photo.tags;
-            current_slide_id++;
-        } else
-            verticals.push_back(current_photo);
+    int v = 0;
+    int vslides_num = floor(vertical_photos/2);
+    cout << "total: " << vertical_photos << ", slides: " << vslides_num;
+    Photo* vphotos[vertical_photos];
+    for (int l = 0; l < lines; l++) {
+        if (photos[l].kind == "V") {
+            vphotos[v] = &photos[l];
+            v++;
+        }
     }
 
     // vertical_slides = local_search_verticals(verticals)
@@ -96,4 +76,34 @@ int main(int argc, char** argv) {
     // produci out scorrendo le slides i.e. come sono ordinate e' l'output
 
     return 0;
+}
+
+int slide_score(Slide& s1, Slide& s2) {
+    int score = 0;
+    int common_tags = 0;
+    for (int i = 0; i < s1.tag_num; i++) {
+        for (int j = 0; j < s2.tag_num; j++) {
+            if (s1.tags[i] == s2.tags[j])
+                common_tags++;
+        }
+    }
+    return min(common_tags, min(s1.tag_num - common_tags, s2.tag_num - common_tags));
+}
+
+int vertical_score(Photo& v1, Photo& v2) {
+    int score = v1.tag_num + v2.tag_num;
+    for (int i = 0; i < v1.tag_num; i++) {
+        for (int j = 0; j < v2.tag_num; j++) {
+            if (v1.tags[i] == v2.tags[j])
+                score--;
+        }
+    }
+    return score;
+}
+
+Slide* local_search_verticals(Photo* vphotos[], int vphotos_len, int vslides_num) {
+    Slide vertical_slides[vslides_num];
+    // pre-compute scores between all vertical photos
+    // use scores to create a starting set of slides
+    return vertical_slides;
 }
