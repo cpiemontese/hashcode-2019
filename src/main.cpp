@@ -103,7 +103,7 @@ int vertical_score(Photo& v1, Photo& v2) {
 }
 
 // upper triangular matrix indices to array index
-inline int tmatrix_to_arr_id(int size, int i, int j) {
+inline int transform_id(int size, int i, int j) {
     return i * size + j - (i > 0) ? i * 3 : 1;
 }
 
@@ -116,14 +116,47 @@ Slide* local_search_verticals(Photo* vphotos[], int vphotos_len, int vslides_num
     int scores[score_len];
 
     int id = -1;
-    for (int i = 0; i < vphotos_len; i++) {
+    for (int i = 0; i < vphotos_len - 1; i++) {
         for (int j = i + 1; i < vphotos_len; j++) {
-            id = tmatrix_to_arr_id(vphotos_len, i, j); 
+            id = transform_id(vphotos_len, i, j); 
             scores[id] = vertical_score(*vphotos[i], *vphotos[j]);
         }
     }
 
-    // use scores to create a starting set of slides
+    // use scores to create a starting set of slides greedily
+    int slide_id = 0;
+    bool selected[vphotos_len] = { false };
+    for (int i = 0; i < vphotos_len; i++) {
+        int max = -1;
+        int sel_id = -1;
+
+        if (selected[i])    // i was already selected as part of a slide
+            continue;
+
+        for (int j = 0; j < vphotos_len; j++) {
+            if (i != j) {
+                int s = (i < j) ? scores[transform_id(vphotos_len, i, j)]
+                                : scores[transform_id(vphotos_len, j, i)];
+                if (s > max && !selected[j]) {
+                    max = s;
+                    sel_id = j;
+                }
+            }
+        }
+        
+        if (max != -1) {
+            selected[i] = true;         // i is selected
+            selected[sel_id] = true;
+            tmp_slides[slide_id].first = i;
+            tmp_slides[slide_id].second = sel_id;
+            slide_id++;
+        }
+        // if max is -1 then there is an odd number of vertical photos and one
+        // photos is left unpaired
+    }
+
+    // modify the starting set in some way
+
     return vertical_slides;
 }
 
