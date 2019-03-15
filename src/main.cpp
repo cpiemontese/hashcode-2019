@@ -25,6 +25,7 @@ struct Slide {
 
 int slide_score(Slide& s1, Slide& s2);
 int vertical_score(Photo& v1, Photo& v2);
+int score_array_dim(int size);
 Slide* local_search_verticals(Photo* vphotos[], int vphotos_len, int vslides_num);
 
 int main(int argc, char** argv) {
@@ -101,9 +102,40 @@ int vertical_score(Photo& v1, Photo& v2) {
     return score;
 }
 
+// upper triangular matrix indices to array index
+inline int tmatrix_to_arr_id(int size, int i, int j) {
+    return i * size + j - (i > 0) ? i * 3 : 1;
+}
+
 Slide* local_search_verticals(Photo* vphotos[], int vphotos_len, int vslides_num) {
     Slide vertical_slides[vslides_num];
+    pair<int, int> tmp_slides[vslides_num];
+
     // pre-compute scores between all vertical photos
+    int score_len = score_array_dim(vphotos_len);
+    int scores[score_len];
+
+    int id = -1;
+    for (int i = 0; i < vphotos_len; i++) {
+        for (int j = i + 1; i < vphotos_len; j++) {
+            id = tmatrix_to_arr_id(vphotos_len, i, j); 
+            scores[id] = vertical_score(*vphotos[i], *vphotos[j]);
+        }
+    }
+
     // use scores to create a starting set of slides
     return vertical_slides;
+}
+
+int _score_array_dim(int size, int pres) {
+    if (size == 0 || size == 1)
+        return 0;
+    else if (size == 2)
+        return pres + 1;
+    else
+        return _score_array_dim(size - 1, pres + size - 1);
+}
+
+int score_array_dim(int size) {
+    return _score_array_dim(size, 0);
 }
