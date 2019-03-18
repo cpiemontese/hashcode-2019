@@ -1,15 +1,17 @@
 #include <tuple>
 #include <math.h>
 #include <random>
+#include <iostream>
+#include <slide.h>
 #include <local_search.h>
 using namespace std;
 
 int score_array_dim(int size);
 int slide_score(Slide& s1, Slide& s2);
-int vertical_score(Photo& v1, Photo& v2);
+int vertical_score(Photo* v1, Photo* v2);
 inline int transform_id(int size, int i, int j);
 int get_score(int scores[], int i, int j, int size);
-Slide* local_search_verticals(Photo* vphotos[], int vphotos_len, int vslides_num);
+void local_search_verticals(Photo* vphotos[], int vphotos_len, int vslides_num, Slide vertical_slides[]);
 
 int _score_array_dim(int size, int pres) {
     if (size < 2)
@@ -35,11 +37,11 @@ int slide_score(Slide& s1, Slide& s2) {
     return min(common_tags, min(s1.tag_num - common_tags, s2.tag_num - common_tags));
 }
 
-int vertical_score(Photo& v1, Photo& v2) {
-    int score = v1.tag_num + v2.tag_num;
-    for (int i = 0; i < v1.tag_num; i++) {
-        for (int j = 0; j < v2.tag_num; j++) {
-            if (v1.tags[i] == v2.tags[j])
+int vertical_score(Photo* v1, Photo* v2) {
+    int score = v1->tag_num + v2->tag_num;
+    for (int i = 0; i < v1->tag_num; i++) {
+        for (int j = 0; j < v2->tag_num; j++) {
+            if (v1->tags[i] == v2->tags[j])
                 score--;
         }
     }
@@ -55,8 +57,7 @@ int get_score(int scores[], int i, int j, int size) {
     return (i < j) ? scores[transform_id(size, i, j)] : scores[transform_id(size, j, i)];
 }
 
-Slide* local_search_verticals(Photo* vphotos[], int vphotos_len, int vslides_num) {
-    Slide vertical_slides[vslides_num];
+void local_search_verticals(Photo* vphotos[], int vphotos_len, int vslides_num, Slide vertical_slides[]) {
     tuple<int, int> tmp_slides[vslides_num];
 
     // pre-compute scores between all vertical photos
@@ -66,7 +67,7 @@ Slide* local_search_verticals(Photo* vphotos[], int vphotos_len, int vslides_num
     for (int i = 0; i < vphotos_len - 1; i++) {
         for (int j = i + 1; i < vphotos_len; j++) {
             int id = transform_id(vphotos_len, i, j); 
-            scores[id] = vertical_score(*vphotos[i], *vphotos[j]);
+            scores[id] = vertical_score(vphotos[i], vphotos[j]);
         }
     }
 
@@ -108,8 +109,8 @@ Slide* local_search_verticals(Photo* vphotos[], int vphotos_len, int vslides_num
 
     random_device rd;
     mt19937 rng(rd());
-    uniform_int_distribution uni_int(0, vphotos_len - 1);
-    uniform_real_distribution uni_real(0.0, 1.0);
+    uniform_int_distribution<int> uni_int(0, vphotos_len - 1);
+    uniform_real_distribution<double> uni_real(0.0, 1.0);
 
     for (int i = 0; i < MAX_ITER; i++) {
         int rid1 = uni_int(rng);
@@ -167,12 +168,14 @@ Slide* local_search_verticals(Photo* vphotos[], int vphotos_len, int vslides_num
         }
     }
 
+    cout << "Final vertical score: " << total_score;
+
     // create the actual vertical slides
     for (int i = 0; i < vslides_num; i++) {
         vertical_slides[i].kind = SlideKind::V;
-        vertical_slides[i].ids = tmp_slides[i];
-        int id1 = get<0>(vertical_slides[i].ids);
-        int id2 = get<1>(vertical_slides[i].ids);
+        vertical_slides[i].id_or_ids.ids = tmp_slides[i];
+        int id1 = get<0>(vertical_slides[i].id_or_ids.ids);
+        int id2 = get<1>(vertical_slides[i].id_or_ids.ids);
         vertical_slides[i].tag_num = get_score(scores, id1, id2, vphotos_len);
         vertical_slides[i].tags = new string[vertical_slides[i].tag_num];
 
@@ -193,6 +196,4 @@ Slide* local_search_verticals(Photo* vphotos[], int vphotos_len, int vslides_num
             }
         }
     }
-
-    return vertical_slides;
 }

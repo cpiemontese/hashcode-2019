@@ -42,19 +42,17 @@ int main(int argc, char** argv) {
 
     int v = 0;
     int vslides_num = floor(vertical_photos/2);
-    cout << "total: " << vertical_photos << ", slides: " << vslides_num;
+    cout << "total vertical: " << vertical_photos << ", slides: " << vslides_num << endl;
     Photo* vphotos[vertical_photos];
-    for (int l = 0; l < lines; l++) {
+    for (int l = 0; l < lines && v < vertical_photos; l++) {
         if (photos[l].kind == "V") {
             vphotos[v] = &photos[l];
             v++;
         }
     }
 
-    // vertical_slides = local_search_verticals(verticals)
-    // aggiungi vertical_slides a slides
-    // slides = local_search_whole(slides)
-    // produci out scorrendo le slides i.e. come sono ordinate e' l'output
+    Slide vertical_slides[vslides_num];
+    local_search_verticals(vphotos, vertical_photos, vslides_num, vertical_slides);
 
     return 0;
 }
