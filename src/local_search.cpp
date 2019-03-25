@@ -44,7 +44,6 @@ int vertical_score(Photo* v1, Photo* v2) {
 }
 
 // upper triangular matrix indices to array index
-// BUGGED
 inline int transform_id(int size, int i, int j) {
     return i*size + j - ((i + 1) * (i + 2) / 2);
 }
@@ -56,7 +55,6 @@ int get_score(int scores[], int i, int j, int size) {
         return (i < j) ? scores[transform_id(size, i, j)] : scores[transform_id(size, j, i)];
 }
 
-// BUG: I have to keep the max tmp_slides stored too
 void local_search_verticals(Photo* vphotos[], int vphotos_len, int vslides_num, Slide vertical_slides[]) {
     tuple<int, int> tmp_slides[vslides_num];
 
@@ -69,10 +67,6 @@ void local_search_verticals(Photo* vphotos[], int vphotos_len, int vslides_num, 
             int id = transform_id(vphotos_len, i, j); 
             scores[id] = vertical_score(vphotos[i], vphotos[j]);
             assert (get_score(scores, i, j, vphotos_len) == scores[id]);
-            //assert (get_score(scores, j, i, vphotos_len) == scores[id]);
-            //assert (scores[id] == vertical_score(vphotos[j], vphotos[i]));
-            //assert (vertical_score(vphotos[i], vphotos[i]) == 0);
-            //assert (vertical_score(vphotos[j], vphotos[j]) == 0);
         }
     }
 
@@ -117,6 +111,11 @@ void local_search_verticals(Photo* vphotos[], int vphotos_len, int vslides_num, 
 
     cout << "Starting score: " << total_score << endl;
 
+    int current_max_score = total_score;
+    tuple<int, int> total_slides[vslides_num];
+    for (int i = 0; i < vslides_num; i++)
+        total_slides[i] = tmp_slides[i];
+
     for (int i = 0; i < MAX_ITER; i++) {
         int rid1 = uni_int(rng);
         int rid2 = uni_int(rng);
@@ -160,9 +159,10 @@ void local_search_verticals(Photo* vphotos[], int vphotos_len, int vslides_num, 
         rid2_new_score = (rid1_other != -1) ? get_score(scores, rid2, rid1_other, vphotos_len) : 0;
 
         // accept either a better score or a bad score but with probability 0.5
-        int new_score = total_score - rid1_old_score - rid2_old_score + rid1_new_score + rid2_new_score;
-        if (new_score > total_score || uni_real(rng) >= 0.5) {
-            total_score = new_score;
+        int new_score = current_max_score - rid1_old_score - rid2_old_score + rid1_new_score + rid2_new_score;
+        if (new_score > current_max_score || uni_real(rng) >= 0.5) {
+            current_max_score = new_score;
+            
             // update pairs
             bool done1 = rid1_other == -1;
             bool done2 = rid2_other == -1;
@@ -176,15 +176,23 @@ void local_search_verticals(Photo* vphotos[], int vphotos_len, int vslides_num, 
                     done2 = true;
                 }
             }
+
+            // if new_score is actually better than the best, save it
+            if (new_score > total_score) {
+                total_score = new_score;
+                for (int i = 0; i < vslides_num; i++)
+                    total_slides[i] = tmp_slides[i];
+            }
         }
+        cout << "Total: " << total_score << ", current max: " << current_max_score << endl;
     }
 
     cout << "Final vertical score: " << total_score << endl;
 
     // create the actual vertical slides
     for (int i = 0; i < vslides_num; i++) {
-        int id1 = get<0>(tmp_slides[i]);
-        int id2 = get<1>(tmp_slides[i]);
+        int id1 = get<0>(total_slides[i]);
+        int id2 = get<1>(total_slides[i]);
 
         vertical_slides[i].kind = SlideKind::V;
         vertical_slides[i].id_or_ids.ids = make_tuple(vphotos[id1]->id, vphotos[id2]->id);
