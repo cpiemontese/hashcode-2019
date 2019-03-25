@@ -13,22 +13,20 @@ int vertical_score(Photo* v1, Photo* v2);
 inline int transform_id(int size, int i, int j);
 int get_score(int scores[], int i, int j, int size);
 int compute_slideshow_score(int scores[], int slideshow[], int len);
-void local_search_verticals(Photo* vphotos[], int vphotos_len, int vslides_num, Slide vertical_slides[]);
-void local_search_slides(Slide* photos[], int photos_len, Slide final_slides[]);
 
 inline int score_array_dim(int size) {
     return (size*size - size)/2;
 }
 
-int slide_score(Slide* s1, Slide* s2) {
+int slide_score(Slide& s1, Slide& s2) {
     int common_tags = 0;
-    for (int i = 0; i < s1->tag_num; i++) {
-        for (int j = 0; j < s2->tag_num; j++) {
-            if (s1->tags[i] == s2->tags[j])
+    for (int i = 0; i < s1.tag_num; i++) {
+        for (int j = 0; j < s2.tag_num; j++) {
+            if (s1.tags[i] == s2.tags[j])
                 common_tags++;
         }
     }
-    return min(common_tags, min(s1->tag_num - common_tags, s2->tag_num - common_tags));
+    return min(common_tags, min(s1.tag_num - common_tags, s2.tag_num - common_tags));
 }
 
 int vertical_score(Photo* v1, Photo* v2) {
@@ -186,7 +184,6 @@ void local_search_verticals(Photo* vphotos[], int vphotos_len, int vslides_num, 
                     total_slides[i] = tmp_slides[i];
             }
         }
-        cout << "Total: " << total_score << ", current max: " << current_max_score << endl;
     }
 
     cout << "Final vertical score: " << total_score << endl;
@@ -228,35 +225,35 @@ int compute_slideshow_score(int scores[], int slideshow[], int len) {
     return score;
 }
 
-void local_search_slides(Slide* photos[], int photos_len, Slide final_slides[]) {
-    int tmp_slides[photos_len];
+void local_search_slides(Slide slides[], int slides_len, Slide final_slides[]) {
+    int tmp_slides[slides_len];
 
-    // pre-compute scores between all vertical photos
-    int score_len = score_array_dim(photos_len);
+    // pre-compute scores between all vertical slides
+    int score_len = score_array_dim(slides_len);
     int scores[score_len];
 
-    for (int i = 0; i < photos_len - 1; i++) {
-        for (int j = i + 1; j < photos_len; j++) {
-            int id = transform_id(photos_len, i, j); 
-            scores[id] = slide_score(photos[i], photos[j]);
-            assert (get_score(scores, i, j, photos_len) == scores[id]);
+    for (int i = 0; i < slides_len - 1; i++) {
+        for (int j = i + 1; j < slides_len; j++) {
+            int id = transform_id(slides_len, i, j); 
+            scores[id] = slide_score(slides[i], slides[j]);
+            assert (get_score(scores, i, j, slides_len) == scores[id]);
         }
     }
 
     // use scores to create a starting set of slides greedily
     int slide_id = 0;
     int total_score = 0;
-    bool selected[photos_len] = { false };
+    bool selected[slides_len] = { false };
 
-    for (int i = 0; i < photos_len && slide_id < photos_len - 1; i++) {
+    for (int i = 0; i < slides_len && slide_id < slides_len - 1; i++) {
         int max = 0;
         int sel_id = -1;
 
         if (selected[i])    // i was already selected as part of a slide
             continue;
 
-        for (int j = 0; j < photos_len; j++) {
-            int s = get_score(scores, i, j, photos_len);
+        for (int j = 0; j < slides_len; j++) {
+            int s = get_score(scores, i, j, slides_len);
             if (s > max && !selected[j]) {
                 max = s;
                 sel_id = j;
@@ -272,11 +269,11 @@ void local_search_slides(Slide* photos[], int photos_len, Slide final_slides[]) 
         slide_id += 2;
     } 
 
-    // if photos_len is odd then the last slide gets left out;
-    if (slide_id != photos_len) {
-        for (int i = 0; i < photos_len; i++) {
+    // if slides_len is odd then the last slide gets left out;
+    if (slide_id != slides_len) {
+        for (int i = 0; i < slides_len; i++) {
             if (!selected[i]) {
-                tmp_slides[photos_len - 1] = i;
+                tmp_slides[slides_len - 1] = i;
                 break;
             }
         }
@@ -287,14 +284,14 @@ void local_search_slides(Slide* photos[], int photos_len, Slide final_slides[]) 
 
     random_device rd;
     mt19937 rng(rd());
-    uniform_int_distribution<int> uni_int(0, photos_len - 1);
+    uniform_int_distribution<int> uni_int(0, slides_len - 1);
     uniform_real_distribution<double> uni_real(0.0, 1.0);
 
     cout << "Starting score: " << total_score << endl;
 
     int current_max_score = total_score;
-    int total_slides[photos_len];
-    for (int i = 0; i < photos_len; i++)
+    int total_slides[slides_len];
+    for (int i = 0; i < slides_len; i++)
         total_slides[i] = tmp_slides[i];
 
     int tmp;
@@ -308,7 +305,7 @@ void local_search_slides(Slide* photos[], int photos_len, Slide final_slides[]) 
         
         // swap
         swap(tmp_slides[rid1], tmp_slides[rid2]);
-        int new_score = compute_slideshow_score(scores, tmp_slides, photos_len);
+        int new_score = compute_slideshow_score(scores, tmp_slides, slides_len); // smart score update
 
         if (new_score > current_max_score || uni_real(rng) >= 0.5) {
             current_max_score = new_score;
@@ -316,7 +313,7 @@ void local_search_slides(Slide* photos[], int photos_len, Slide final_slides[]) 
             // if new_score is actually better than the best, save it
             if (new_score > total_score) {
                 total_score = new_score;
-                for (int i = 0; i < photos_len; i++)
+                for (int i = 0; i < slides_len; i++)
                     total_slides[i] = tmp_slides[i];
             }
         } else
@@ -328,13 +325,6 @@ void local_search_slides(Slide* photos[], int photos_len, Slide final_slides[]) 
     cout << "Final vertical score: " << total_score << endl;
 
     // create the actual vertical slides
-    for (int i = 0; i < photos_len; i++) {
-        final_slides[i].kind = photos[tmp_slides[i]]->kind;
-        if (final_slides[i].kind == SlideKind::H)
-            final_slides[i].id_or_ids.id = photos[tmp_slides[i]]->id_or_ids.id;
-        else
-            final_slides[i].id_or_ids.ids = photos[tmp_slides[i]]->id_or_ids.ids;
-        final_slides[i].tag_num = photos[tmp_slides[i]]->tag_num;
-        final_slides[i].tags = photos[tmp_slides[i]]->tags;
-    }
+    for (int i = 0; i < slides_len; i++)
+        copy(slides[tmp_slides[i]], final_slides[i]);
 }

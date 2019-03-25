@@ -4,6 +4,7 @@
 #include <tuple>
 #include <cstring>
 #include <string>
+#include <photo.h>
 
 enum struct SlideKind { H, V };
 
@@ -18,5 +19,8 @@ struct Slide {
     };
     Id_or_ids id_or_ids;
 };
+
+int copy_photo_to_hslide(Photo src, Slide& dst);
+void copy(Slide src, Slide& dst);
 
 #endif

@@ -54,5 +54,17 @@ int main(int argc, char** argv) {
     Slide vertical_slides[vslides_num];
     local_search_verticals(vphotos, vertical_photos, vslides_num, vertical_slides);
 
+    int slides_num = lines - vertical_photos + vslides_num;
+    // prepare slides
+    Slide slides[slides_num];
+    for (int i = 0; i < lines; i++) {
+        if (!(photos[i].kind == "H")) continue;
+        copy_photo_to_hslide(photos[i], slides[i]);
+    }
+    for (int i = lines, j = 0; i < slides_num & j < vslides_num; i++, j++)
+        copy(vertical_slides[j], slides[i]);
+
+    local_search_slides(slides, slides_num, slides);
+
     return 0;
 }
