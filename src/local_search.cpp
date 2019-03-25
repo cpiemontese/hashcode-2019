@@ -318,11 +318,9 @@ void local_search_slides(Slide slides[], int slides_len, Slide final_slides[]) {
             }
         } else
             swap(tmp_slides[rid1], tmp_slides[rid2]);
-
-        cout << "Total: " << total_score << ", current max: " << current_max_score << endl;
     }
 
-    cout << "Final vertical score: " << total_score << endl;
+    cout << "Final total score: " << total_score << endl;
 
     // create the actual vertical slides
     for (int i = 0; i < slides_len; i++)

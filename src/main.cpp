@@ -42,7 +42,6 @@ int main(int argc, char** argv) {
 
     int v = 0;
     int vslides_num = floor(vertical_photos/2);
-    cout << "total vertical: " << vertical_photos << ", slides: " << vslides_num << endl;
     Photo* vphotos[vertical_photos];
     for (int l = 0; l < lines && v < vertical_photos; l++) {
         if (photos[l].kind == "V") {
@@ -57,12 +56,16 @@ int main(int argc, char** argv) {
     int slides_num = lines - vertical_photos + vslides_num;
     // prepare slides
     Slide slides[slides_num];
+    int slide_id = 0;
     for (int i = 0; i < lines; i++) {
         if (!(photos[i].kind == "H")) continue;
-        copy_photo_to_hslide(photos[i], slides[i]);
+        copy_photo_to_hslide(photos[i], slides[slide_id]);
+        slide_id++;
     }
-    for (int i = lines, j = 0; i < slides_num & j < vslides_num; i++, j++)
-        copy(vertical_slides[j], slides[i]);
+    for (int j = 0; j < vslides_num; j++) {
+        copy(vertical_slides[j], slides[slide_id]);
+        slide_id++;
+    }
 
     local_search_slides(slides, slides_num, slides);
 
