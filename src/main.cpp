@@ -1,8 +1,9 @@
+#include <tuple>
+#include <vector>
+#include <random>
+#include <math.h>
 #include <fstream>
 #include <iostream>
-#include <math.h>
-#include <random>
-#include <tuple>
 #include <photo.h>
 #include <slide.h>
 #include <local_search.h>
@@ -25,7 +26,7 @@ int main(int argc, char** argv) {
     // maniera banale per creare nuove soluzioni, i.e. lavoro sugli indici
 
     int vertical_photos = 0;
-    Photo photos[lines];
+    vector<Photo> photos(lines);
     for (int l = 0; l < lines; l++) {
         infile >> photos[l].kind;
         infile >> photos[l].tag_num;
@@ -42,7 +43,7 @@ int main(int argc, char** argv) {
 
     int v = 0;
     int vslides_num = floor(vertical_photos/2);
-    Photo* vphotos[vertical_photos];
+    vector<Photo*> vphotos(vertical_photos);
     for (int l = 0; l < lines && v < vertical_photos; l++) {
         if (photos[l].kind == "V") {
             vphotos[v] = &photos[l];
@@ -50,12 +51,12 @@ int main(int argc, char** argv) {
         }
     }
 
-    Slide vertical_slides[vslides_num];
+    vector<Slide> vertical_slides(vslides_num);
     local_search_verticals(vphotos, vertical_photos, vslides_num, vertical_slides);
 
     int slides_num = lines - vertical_photos + vslides_num;
     // prepare slides
-    Slide slides[slides_num];
+    vector<Slide> slides(slides_num);
     int slide_id = 0;
     for (int i = 0; i < lines; i++) {
         if (!(photos[i].kind == "H")) continue;

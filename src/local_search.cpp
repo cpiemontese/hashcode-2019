@@ -1,4 +1,5 @@
 #include <tuple>
+#include <vector>
 #include <math.h>
 #include <random>
 #include <iostream>
@@ -12,7 +13,7 @@ int slide_score(Slide& s1, Slide& s2);
 int vertical_score(Photo* v1, Photo* v2);
 inline int transform_id(int size, int i, int j);
 int get_score(int scores[], int i, int j, int size);
-int compute_slideshow_score(int scores[], int slideshow[], int len);
+int compute_slideshow_score(int scores[], vector<int> slideshow, int len);
 
 inline int score_array_dim(int size) {
     return (size*size - size)/2;
@@ -55,9 +56,10 @@ int get_score(int scores[], int i, int j, int size) {
         return (i < j) ? scores[transform_id(size, i, j)] : scores[transform_id(size, j, i)];
 }
 
-void local_search_verticals(Photo* vphotos[], int vphotos_len, int vslides_num, Slide vertical_slides[]) {
-    tuple<int, int> tmp_slides[vslides_num];
+void local_search_verticals(vector<Photo*> vphotos, int vphotos_len, int vslides_num, vector<Slide> vertical_slides) {
+    vector<tuple<int, int>> tmp_slides(vslides_num);
 
+    // TODO: remove precomputing --> for 90000 photos we have ~6.4 * 10e9 int i.e. 24 * 10e9 bytes i.e. 24 gigabytes of data... NOPE 
     // pre-compute scores between all vertical photos
     int score_len = score_array_dim(vphotos_len);
     int scores[score_len];
@@ -73,7 +75,7 @@ void local_search_verticals(Photo* vphotos[], int vphotos_len, int vslides_num, 
     // use scores to create a starting set of slides greedily
     int slide_id = 0;
     int total_score = 0;
-    bool selected[vphotos_len] = { false };
+    vector<bool> selected(vphotos_len, false);
     for (int i = 0; i < vphotos_len && slide_id < vslides_num; i++) {
         int max = -1;
         int sel_id = -1;
@@ -112,7 +114,7 @@ void local_search_verticals(Photo* vphotos[], int vphotos_len, int vslides_num, 
     cout << "Starting score: " << total_score << endl;
 
     int current_max_score = total_score;
-    tuple<int, int> total_slides[vslides_num];
+    vector<tuple<int, int>> total_slides(vslides_num);
     for (int i = 0; i < vslides_num; i++)
         total_slides[i] = tmp_slides[i];
 
@@ -217,7 +219,7 @@ void local_search_verticals(Photo* vphotos[], int vphotos_len, int vslides_num, 
     }
 }
 
-int compute_slideshow_score(int scores[], int slideshow[], int len) {
+int compute_slideshow_score(int scores[], vector<int> slideshow, int len) {
     int score = 0;
     for (int i = 0; i < len - 1; i++) {
         score += get_score(scores, i, i + 1, len);
@@ -225,8 +227,8 @@ int compute_slideshow_score(int scores[], int slideshow[], int len) {
     return score;
 }
 
-void local_search_slides(Slide slides[], int slides_len, Slide final_slides[]) {
-    int tmp_slides[slides_len];
+void local_search_slides(vector<Slide> slides, int slides_len, vector<Slide> final_slides) {
+    vector<int> tmp_slides(slides_len);
 
     // pre-compute scores between all vertical slides
     int score_len = score_array_dim(slides_len);
@@ -243,7 +245,7 @@ void local_search_slides(Slide slides[], int slides_len, Slide final_slides[]) {
     // use scores to create a starting set of slides greedily
     int slide_id = 0;
     int total_score = 0;
-    bool selected[slides_len] = { false };
+    vector<bool> selected(slides_len, false);
 
     for (int i = 0; i < slides_len && slide_id < slides_len - 1; i++) {
         int max = 0;
@@ -290,7 +292,7 @@ void local_search_slides(Slide slides[], int slides_len, Slide final_slides[]) {
     cout << "Starting score: " << total_score << endl;
 
     int current_max_score = total_score;
-    int total_slides[slides_len];
+    vector<int> total_slides(slides_len);
     for (int i = 0; i < slides_len; i++)
         total_slides[i] = tmp_slides[i];
 
