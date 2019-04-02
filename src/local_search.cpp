@@ -13,7 +13,7 @@ int slide_score(Slide& s1, Slide& s2);
 int vertical_score(Photo* v1, Photo* v2);
 inline int transform_id(int size, int i, int j);
 int get_score(int scores[], int i, int j, int size);
-int compute_slideshow_score(int scores[], vector<int> slideshow, int len);
+int compute_slideshow_score(vector<int> slideshow, vector<Slide> slides, int len);
 
 inline int score_array_dim(int size) {
     return (size*size - size)/2;
@@ -59,19 +59,6 @@ int get_score(int scores[], int i, int j, int size) {
 void local_search_verticals(vector<Photo*> vphotos, int vphotos_len, int vslides_num, vector<Slide> vertical_slides) {
     vector<tuple<int, int>> tmp_slides(vslides_num);
 
-    // TODO: remove precomputing --> for 90000 photos we have ~6.4 * 10e9 int i.e. 24 * 10e9 bytes i.e. 24 gigabytes of data... NOPE 
-    // pre-compute scores between all vertical photos
-    int score_len = score_array_dim(vphotos_len);
-    int scores[score_len];
-
-    for (int i = 0; i < vphotos_len - 1; i++) {
-        for (int j = i + 1; j < vphotos_len; j++) {
-            int id = transform_id(vphotos_len, i, j); 
-            scores[id] = vertical_score(vphotos[i], vphotos[j]);
-            assert (get_score(scores, i, j, vphotos_len) == scores[id]);
-        }
-    }
-
     // use scores to create a starting set of slides greedily
     int slide_id = 0;
     int total_score = 0;
@@ -84,10 +71,12 @@ void local_search_verticals(vector<Photo*> vphotos, int vphotos_len, int vslides
             continue;
 
         for (int j = 0; j < vphotos_len; j++) {
-            int s = get_score(scores, i, j, vphotos_len);
-            if (s > max && !selected[j]) {
-                max = s;
-                sel_id = j;
+            if (!selected[j]) {
+                int s =  vertical_score(vphotos[i], vphotos[j]);
+                if (s > max) {
+                    max = s;
+                    sel_id = j;
+                }
             }
         }
         
@@ -119,6 +108,7 @@ void local_search_verticals(vector<Photo*> vphotos, int vphotos_len, int vslides
         total_slides[i] = tmp_slides[i];
 
     for (int i = 0; i < MAX_ITER; i++) {
+        cout << "\r" << "Iteration " << i << endl;
         int rid1 = uni_int(rng);
         int rid2 = uni_int(rng);
 
@@ -141,12 +131,12 @@ void local_search_verticals(vector<Photo*> vphotos, int vphotos_len, int vslides
             int id0 = get<0>(tmp_slides[j]);
             int id1 = get<1>(tmp_slides[j]);
             if (id0 == rid1 || id1 == rid1) {
-                rid1_old_score = get_score(scores, id0, id1, vphotos_len);
+                rid1_old_score = vertical_score(vphotos[id0], vphotos[id1]);
                 rid1_other = (id0 == rid1) ? id1 : id0;
                 done1 = true;
             }
             if (id0 == rid2 || id1 == rid2) {
-                rid2_old_score = get_score(scores, id0, id1, vphotos_len);
+                rid2_old_score = vertical_score(vphotos[id0], vphotos[id1]);
                 rid2_other = (id0 == rid2) ? id1 : id0;
                 done2 = true;
             }
@@ -157,8 +147,8 @@ void local_search_verticals(vector<Photo*> vphotos, int vphotos_len, int vslides
 
         // if rid1/rid2 is not part of a pair then rid?_other will be -1 and the
         // new score will be 0
-        rid1_new_score = (rid2_other != -1) ? get_score(scores, rid1, rid2_other, vphotos_len) : 0;
-        rid2_new_score = (rid1_other != -1) ? get_score(scores, rid2, rid1_other, vphotos_len) : 0;
+        rid1_new_score = (rid2_other != -1) ? vertical_score(vphotos[rid1], vphotos[rid2_other]) : 0;
+        rid2_new_score = (rid1_other != -1) ? vertical_score(vphotos[rid2], vphotos[rid1_other]) : 0;
 
         // accept either a better score or a bad score but with probability 0.5
         int new_score = current_max_score - rid1_old_score - rid2_old_score + rid1_new_score + rid2_new_score;
@@ -197,7 +187,7 @@ void local_search_verticals(vector<Photo*> vphotos, int vphotos_len, int vslides
 
         vertical_slides[i].kind = SlideKind::V;
         vertical_slides[i].id_or_ids.ids = make_tuple(vphotos[id1]->id, vphotos[id2]->id);
-        vertical_slides[i].tag_num = get_score(scores, id1, id2, vphotos_len);
+        vertical_slides[i].tag_num = vertical_score(vphotos[id1], vphotos[id2]);
         vertical_slides[i].tags = new string[vertical_slides[i].tag_num];
 
         // copy the tags from id1
@@ -219,28 +209,16 @@ void local_search_verticals(vector<Photo*> vphotos, int vphotos_len, int vslides
     }
 }
 
-int compute_slideshow_score(int scores[], vector<int> slideshow, int len) {
+int compute_slideshow_score(vector<int> slideshow, vector<Slide> slides, int len) {
     int score = 0;
-    for (int i = 0; i < len - 1; i++) {
-        score += get_score(scores, i, i + 1, len);
-    }
+    for (int i = 0; i < len - 1; i++)
+        score += slide_score(slides[slideshow[i]], slides[slideshow[i + 1]]);
+
     return score;
 }
 
 void local_search_slides(vector<Slide> slides, int slides_len, vector<Slide> final_slides) {
     vector<int> tmp_slides(slides_len);
-
-    // pre-compute scores between all vertical slides
-    int score_len = score_array_dim(slides_len);
-    int scores[score_len];
-
-    for (int i = 0; i < slides_len - 1; i++) {
-        for (int j = i + 1; j < slides_len; j++) {
-            int id = transform_id(slides_len, i, j); 
-            scores[id] = slide_score(slides[i], slides[j]);
-            assert (get_score(scores, i, j, slides_len) == scores[id]);
-        }
-    }
 
     // use scores to create a starting set of slides greedily
     int slide_id = 0;
@@ -255,7 +233,7 @@ void local_search_slides(vector<Slide> slides, int slides_len, vector<Slide> fin
             continue;
 
         for (int j = 0; j < slides_len; j++) {
-            int s = get_score(scores, i, j, slides_len);
+            int s = slide_score(slides[i], slides[j]);
             if (s > max && !selected[j]) {
                 max = s;
                 sel_id = j;
@@ -307,7 +285,7 @@ void local_search_slides(vector<Slide> slides, int slides_len, vector<Slide> fin
         
         // swap
         swap(tmp_slides[rid1], tmp_slides[rid2]);
-        int new_score = compute_slideshow_score(scores, tmp_slides, slides_len); // smart score update
+        int new_score = compute_slideshow_score(tmp_slides, slides, slides_len); // smart score update
 
         if (new_score > current_max_score || uni_real(rng) >= 0.5) {
             current_max_score = new_score;

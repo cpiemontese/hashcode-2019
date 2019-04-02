@@ -53,6 +53,7 @@ int main(int argc, char** argv) {
 
     vector<Slide> vertical_slides(vslides_num);
     local_search_verticals(vphotos, vertical_photos, vslides_num, vertical_slides);
+    return 0;
 
     int slides_num = lines - vertical_photos + vslides_num;
     // prepare slides
