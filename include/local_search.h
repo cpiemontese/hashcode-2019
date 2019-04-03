@@ -7,7 +7,9 @@
 
 using namespace std;
 
-void local_search_verticals(vector<Photo*> vphotos, int vphotos_len, int vslides_num, vector<Slide> vertical_slides);
-void local_search_slides(vector<Slide> slides, int slides_len, vector<Slide> final_slides);
+template <typename InType, typename OutType>
+void local_search(vector<InType> input, int input_len, vector<OutType> output);
+
+#include <local_search_impl.h>
 
 #endif

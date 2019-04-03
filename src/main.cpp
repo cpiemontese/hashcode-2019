@@ -44,6 +44,7 @@ int main(int argc, char** argv) {
         }
     }
 
+    // TODO: deal with the case when there are no vertical/horizontal slides
     int v = 0;
     int vslides_num = floor(vertical_photos/2);
     vector<Photo*> vphotos(vertical_photos);
@@ -54,9 +55,9 @@ int main(int argc, char** argv) {
         }
     }
 
-    vector<Slide> vertical_slides(vslides_num);
-    local_search_verticals(vphotos, vertical_photos, vslides_num, vertical_slides);
-    return 0;
+    vector<Slide> vertical_slides(vertical_photos);
+    //local_search_verticals(vphotos, vertical_photos, vslides_num, vertical_slides);
+    local_search<Photo*, Slide>(vphotos, vertical_photos, vertical_slides);
 
     int slides_num = lines - vertical_photos + vslides_num;
     // prepare slides
@@ -72,7 +73,8 @@ int main(int argc, char** argv) {
         slide_id++;
     }
 
-    local_search_slides(slides, slides_num, slides);
+    //local_search_slides(slides, slides_num, slides);
+    local_search<Slide, Slide>(slides, slides_num, slides);
 
     return 0;
 }
