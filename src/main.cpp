@@ -1,4 +1,5 @@
 #include <tuple>
+#include <string>
 #include <vector>
 #include <random>
 #include <math.h>
@@ -7,6 +8,7 @@
 #include <photo.h>
 #include <slide.h>
 #include <local_search.h>
+
 using namespace std;
 
 int main(int argc, char** argv) {
@@ -35,9 +37,10 @@ int main(int argc, char** argv) {
             vertical_photos++;
 
         photos[l].id = l;
-        photos[l].tags = new string[photos[l].tag_num];
         for (int t = 0; t < photos[l].tag_num; t++) {
-            infile >> photos[l].tags[t];
+            string tag;
+            infile >> tag;
+            photos[l].tags.push_back(tag);
         }
     }
 

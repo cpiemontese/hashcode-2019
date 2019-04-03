@@ -2,12 +2,15 @@
 #define PHOTO_H
 
 #include <string>
+#include <vector>
+
+using namespace std;
 
 struct Photo {
     int id;
-    std::string kind;
+    string kind;
     int tag_num;
-    std::string* tags;
+    vector<string> tags;
 };
 
 #endif
