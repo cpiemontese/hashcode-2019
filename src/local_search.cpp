@@ -74,15 +74,16 @@ int new_score_after_swap(int current_max, int id0, int id1, vector<int> tmp_solu
 
 
     for (int i = 0; i < solution_len && !(done[0] && done[1]); i++) {
-        int sel = (id0 == i) ? 0 : ((id1 == i) ? 1 : -1);
+        int sel = (id0 == tmp_solution[i]) ? 0 : ((id1 == tmp_solution[i]) ? 1 : -1);
         if (sel != -1) {
+            int current = tmp_solution[i];
             if (id[sel] != 0) {
                 prev[sel] = id[sel] - 1;
-                old_score[sel] += score_fn(slides[prev[sel]], slides[id[sel]]);
+                old_score[sel] += score_fn(slides[tmp_solution[prev[sel]]], slides[current]);
             }
             if (id[sel] != solution_len - 1) {
                 succ[sel] = id[sel] + 1;
-                old_score[sel] += score_fn(slides[id[sel]], slides[succ[sel]]);
+                old_score[sel] += score_fn(slides[current], slides[tmp_solution[succ[sel]]]);
             }
             done[sel] = true;
         }
